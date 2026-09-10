@@ -68,12 +68,14 @@ h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.3rem); }
 .question-help { margin: -6px 0 20px; color: var(--muted); line-height: 1.5; }
 
 .options { display: grid; gap: 12px; }
+.option-group { display: grid; gap: 8px; }
 .option {
   position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
   width: 100%;
+  min-height: 54px;
   padding: 15px 16px;
   border: 1.5px solid var(--line);
   border-radius: 14px;
@@ -83,8 +85,36 @@ h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.3rem); }
 }
 .option:hover { border-color: #9db8ef; background: #fbfdff; }
 .option:active { transform: scale(.995); }
-.option input { width: 20px; height: 20px; accent-color: var(--primary); flex: 0 0 auto; }
+.option input[type="radio"],
+.option input[type="checkbox"] {
+  width: 21px;
+  height: 21px;
+  accent-color: var(--primary);
+  flex: 0 0 auto;
+}
+.option input[type="radio"] { border-radius: 50%; }
 .option.selected { border-color: var(--primary); background: var(--soft); }
+
+.other-wrap {
+  display: none;
+  margin: 0 0 2px 35px;
+}
+.other-wrap.visible { display: grid; gap: 7px; }
+.other-label { color: var(--muted); font-size: .9rem; }
+.other-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+}
+.other-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+}
 
 .welcome, .complete { display: grid; gap: 14px; }
 .welcome h2, .complete h2 { margin: 0; font-size: clamp(1.5rem, 4vw, 2rem); }
@@ -124,9 +154,18 @@ h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.3rem); }
   .app-shell { padding: 0; }
   .survey-card { min-height: 100vh; border-radius: 0; border-left: 0; border-right: 0; box-shadow: none; }
   .survey-header, .screen { padding-left: 18px; padding-right: 18px; }
-  .survey-header { padding-top: 22px; }
+  .survey-header { padding-top: 22px; gap: 16px; }
   .screen { padding-top: 24px; min-height: 360px; }
-  .survey-footer { position: sticky; bottom: 0; background: rgba(255,255,255,.96); backdrop-filter: blur(8px); padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); }
+  .option { padding: 14px; align-items: flex-start; }
+  .option input[type="radio"], .option input[type="checkbox"] { margin-top: 1px; }
+  .other-wrap { margin-left: 0; }
+  .survey-footer {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255,255,255,.96);
+    backdrop-filter: blur(8px);
+    padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  }
   .btn { flex: 1; }
 }
 
