@@ -1,5 +1,6 @@
 (() => {
   const config = window.SURVEY_CONFIG;
+  const storage = window.SURVEY_STORAGE;
   const screen = document.getElementById("screen");
   const backBtn = document.getElementById("backBtn");
   const nextBtn = document.getElementById("nextBtn");
@@ -7,6 +8,7 @@
   const progressText = document.getElementById("progressText");
 
   const state = {
+    sessionId: null,
     started: false,
     currentId: null,
     answers: {},
@@ -25,12 +27,39 @@
   }
 
   function resetState() {
+    state.sessionId = storage?.createSessionId?.() || `session-${Date.now()}`;
     state.started = false;
     state.currentId = null;
     state.answers = {};
     state.otherText = {};
     state.history = [];
     state.completed = false;
+    storage?.clearDraft?.();
+  }
+
+  function getPayload() {
+    return {
+      sessionId: state.sessionId,
+      answers: { ...state.answers },
+      otherText: { ...state.otherText },
+      currentId: state.currentId,
+      history: [...state.history]
+    };
+  }
+
+  function autosaveDraft() {
+    if (!state.started || state.completed) return;
+    storage?.saveDraft?.(getPayload());
+  }
+
+  function clearAnswersAfterCurrent() {
+    const allowed = new Set([...state.history, state.currentId]);
+    Object.keys(state.answers).forEach((id) => {
+      if (!allowed.has(id)) delete state.answers[id];
+    });
+    Object.keys(state.otherText).forEach((id) => {
+      if (!allowed.has(id)) delete state.otherText[id];
+    });
   }
 
   function renderWelcome() {
@@ -44,7 +73,7 @@
         <h2>Velkommen</h2>
         <p>Spørgeskemaet vises ét spørgsmål ad gangen og tilpasser sig dine svar.</p>
         <div class="info-box">
-          Svar gemmes endnu ikke eksternt. Denne version bruges til at afprøve spørgsmål, brugeroplevelse og forgreninger, før en sikker dataløsning kobles på.
+          Denne udviklingsversion gemmer en anonym kladde lokalt i browseren undervejs. Der sendes endnu ikke svar til OneDrive, Google Drive eller en cloud-server.
         </div>
       </div>`;
 
@@ -128,6 +157,8 @@
     const changed = event.target;
     const choiceInputs = [...screen.querySelectorAll('.option input[type="radio"], .option input[type="checkbox"]')];
 
+    clearAnswersAfterCurrent();
+
     if (q.type === "multi") {
       if (changed.checked && changed.dataset.exclusive === "true") {
         choiceInputs.forEach((input) => {
@@ -166,12 +197,14 @@
       }
     });
 
+    autosaveDraft();
     updateControls();
     updateProgress();
   }
 
   function handleOtherTextInput(event) {
     state.otherText[state.currentId] = event.target.value;
+    autosaveDraft();
     updateControls();
   }
 
@@ -242,6 +275,7 @@
     }
 
     state.history.push(state.currentId);
+    autosaveDraft();
     renderQuestion(nextId);
   }
 
@@ -255,6 +289,7 @@
     }
 
     renderQuestion(previousId);
+    autosaveDraft();
   }
 
   function updateControls() {
@@ -291,22 +326,36 @@
     progressText.textContent = `Ca. ${completedIncludingCurrent} af ${estimatedTotal} på denne rute`;
   }
 
-  function finishSurvey() {
+  async function finishSurvey() {
+    if (state.completed) return;
+
     state.completed = true;
-    state.currentId = null;
     progressBar.style.width = "100%";
     progressText.textContent = "Rute gennemført";
-
-    screen.innerHTML = `
-      <div class="complete">
-        <h2>Tak for dine svar</h2>
-        <p>Du har gennemført de spørgsmål, der var relevante for din rute.</p>
-        <div class="info-box">
-          I denne udviklingsversion bliver svar kun holdt midlertidigt i browseren og sendes ikke til et regneark eller en server.
-        </div>
-      </div>`;
-
     backBtn.disabled = true;
+    nextBtn.disabled = true;
+    nextBtn.textContent = "Gemmer…";
+
+    const result = await storage?.submitFinal?.(getPayload());
+    state.currentId = null;
+
+    if (result?.centralSaved) {
+      screen.innerHTML = `
+        <div class="complete">
+          <h2>Tak</h2>
+          <p>${esc(config.completionText)}</p>
+        </div>`;
+    } else {
+      screen.innerHTML = `
+        <div class="complete">
+          <h2>Tak for din hjælp</h2>
+          <p>Du har gennemført de spørgsmål, der var relevante for din rute.</p>
+          <div class="info-box">
+            Dette er stadig en udviklingsversion. Besvarelsen er gemt lokalt i denne browser, men er endnu ikke registreret i den endelige cloud-database. Derfor vises den endelige kvittering og det frivillige e-mailvalg først, når den sikre backend er koblet på.
+          </div>
+        </div>`;
+    }
+
     nextBtn.disabled = false;
     nextBtn.textContent = "Start igen";
   }
