@@ -8,9 +8,7 @@ Du skal videreudvikle GitHub-projektet:
 
 `Ronnykisbye/Sporgeskema`
 
-Formålet er at bygge en lille interaktiv spørgeskema-app til et AU-afgangsprojekt i informationsteknologi.
-
-Appen skal senere hostes på GitHub Pages.
+Appen er en interaktiv spørgeskema-app til et AU-afgangsprojekt i informationsteknologi og hostes via GitHub Pages.
 
 ## Projektets formål
 
@@ -21,10 +19,17 @@ Undersøgelsen skal indsamle data om:
 - hvilke fordele og ulemper brugerne oplever
 - AI i forbindelse med arbejde
 - IT-sikkerhed og arbejdspladsens regler
-- betydningen af AI for programmering, databaser, automatisering og IT-sikkerhed
-- hvilke kompetencer der bliver vigtigere, når AI anvendes
+- senere også betydningen af AI for programmering, databaser, automatisering og IT-sikkerhed
 
-## Vigtige designprincipper
+## Vigtig regel
+
+Du må ikke opfinde nye spørgeskemaspørgsmål på egen hånd.
+
+Tilføj kun spørgsmål, svarmuligheder og forgreninger, som brugeren konkret har godkendt eller bedt om.
+
+Den IT-faglige ekstragren skal fortsat vente, indtil brugeren sender de næste spørgsmål.
+
+## Designprincipper
 
 Appen skal være:
 
@@ -35,94 +40,256 @@ Appen skal være:
 - egnet til mobil, tablet og pc
 - bygget med ét spørgsmål pr. skærmbillede
 - forsynet med tydelig Næste- og Tilbage-funktion
-
-## Beslutningstræ
-
-Spørgeskemaet skal fungere som et beslutningstræ.
-
-Brugeren må kun se relevante spørgsmål.
-
-Et svar skal kunne bestemme det næste spørgsmål.
+- forsynet med en diskret fremdriftsindikator, der tager højde for forskellige ruter
 
 Ved ét muligt svar bruges radio-knapper.
 
 Ved flere mulige svar bruges checkboxes.
 
-En person uden kendskab til AI eller uden brug af AI skal have en kort rute.
+Ved alle multi-choice-spørgsmål med en fri svarmulighed skal "Andet" eller tilsvarende være et afkrydsningsfelt med et tilhørende tekstfelt.
 
-En aktiv AI-bruger kan få en længere rute.
+Appen skal aldrig bede brugeren skrive konkrete følsomme data, kundedata, adgangskoder eller fortrolige oplysninger.
 
-En respondent med IT-faglig baggrund kan få en særlig IT-gren.
+## Beslutningstræ
 
-Den længste rute bør samlet kunne gennemføres på cirka 6–8 minutter.
+Brugeren må kun se relevante spørgsmål.
 
-## Foreløbige baggrundsspørgsmål
+Et svar skal kunne bestemme det næste spørgsmål.
 
-1. Alder
-   - Under 30 år
-   - 30–49 år
-   - 50 år eller derover
+Brugere uden kendskab til AI skal kunne blive hurtigt færdige.
+
+Brugere, som kender AI men ikke selv bruger det, skal have en kort ikke-brugergren.
+
+Aktive AI-brugere får en længere AI-brugergren.
+
+Respondentens IT-profil registreres i spørgsmål 5, så IT-faglige respondenter senere kan sendes til en ekstra faglig gren.
+
+## Aktuelle spørgsmål og flow
+
+### Baggrund
+
+1. Hvad er din alder?
+- Under 30 år
+- 30–49 år
+- 50 år eller derover
 
 2. Køn
-   - Mand
-   - Kvinde
-   - Vil ikke oplyse
+- Mand
+- Kvinde
+- Vil ikke oplyse
 
 3. Bor du i Danmark?
-   - Ja
-   - Nej
+- Ja
+- Nej
 
-4. Har du IT-faglig uddannelse eller arbejder du med IT?
-   - Ja
-   - Nej
+4. Har du kendskab til AI-værktøjer, f.eks. ChatGPT, Copilot, Gemini eller andre?
+- Ja
+- Nej
+- Ved ikke
 
-5. Har du kendskab til AI-værktøjer, f.eks. ChatGPT, Copilot, Gemini eller andre?
-   - Ja
-   - Nej
-   - Ved ikke
+Hvis Nej eller Ved ikke: afslut hurtigt.
 
-Hvis Ja, gå til:
+Hvis Ja:
+
+5. Hvilken beskrivelse passer bedst på dig?
+- Jeg er almindelig IT-bruger uden særlig IT-faglig baggrund
+- Jeg har interesse for eller lidt erfaring med IT
+- Jeg har en IT-faglig uddannelse
+- Jeg arbejder eller har arbejdet professionelt med IT
 
 6. Bruger du selv AI-værktøjer?
-   - Ja, dagligt
-   - Ja, flere gange om ugen
-   - Ja, en gang imellem
-   - Sjældent
-   - Nej
+- Ja, dagligt
+- Ja, flere gange om ugen
+- Ja, en gang imellem
+- Sjældent
+- Nej
 
-## Senere grene
+Hvis Nej: gå til den korte ikke-brugergren.
 
-Aktive AI-brugere skal senere kunne få spørgsmål om:
+Ellers: gå til AI-brugergrenen.
 
-- hvad AI bruges til
-- hvilke AI-værktøjer eller programmer med AI-funktioner der bruges
-- om AI har ændret måden, opgaver løses på
-- fordele og ulemper
-- AI på arbejdet
+### AI-brugergren
+
+7. Hvad bruger du AI til? (flere svar)
+- Søge efter information
+- Skrive eller forbedre tekst
+- Oversætte
+- Opsummere tekst eller dokumenter
+- Skrive eller besvare e-mails
+- Hjælp til studie eller undervisning
+- Regneark / Excel
+- Programmering
+- Databaser
+- Automatisering
 - IT-sikkerhed
-- regler på arbejdspladsen
+- Billeder eller grafik
+- Idéer og inspiration
+- Planlægning
+- Andet + tekstfelt
 
-Ikke-brugere skal senere have en kort gren med spørgsmål om:
+8. Hvilke AI-værktøjer eller programmer med AI-funktioner bruger du? (flere svar)
+- ChatGPT
+- Microsoft Copilot
+- Google Gemini
+- Claude
+- Perplexity
+- AI i Word
+- AI i Excel
+- AI i Outlook / e-mail
+- AI i søgemaskiner
+- Andre AI-værktøjer + tekstfelt
+- Ved ikke
 
-- hvorfor de ikke bruger AI
-- om de kunne forestille sig at bruge AI senere
-- om noget ved AI gør dem tilbageholdende
+9. Har AI ændret den måde, du løser dine opgaver på?
+- Ja, meget
+- Ja, noget
+- Kun lidt
+- Nej
+- Ved ikke
 
-IT-faglige respondenter skal senere kunne få en særskilt gren om:
+Hvis Ja, meget / Ja, noget / Kun lidt: vis spørgsmål 10.
+Hvis Nej / Ved ikke: spring til spørgsmål 11.
 
-- programmering
-- databaser
-- automatisering
-- IT-sikkerhed
-- fremtidige kompetencer
+10. Hvad har ændret sig for dig? (flere svar)
+- Jeg løser opgaver hurtigere
+- Jeg får lettere ved at komme i gang
+- Jeg kan løse opgaver, jeg tidligere havde svært ved
+- Jeg søger information på en anden måde
+- Jeg skriver mindre selv
+- Jeg bruger AI til idéer og inspiration
+- Jeg bruger mindre tid på rutineopgaver
+- Jeg bruger mere tid på at kontrollere svar
+- Jeg arbejder mere selvstændigt
+- Jeg er blevet mere afhængig af AI
+- Andet + tekstfelt
+
+11. Hvilke fordele oplever du ved AI? (flere svar)
+- Jeg sparer tid
+- Opgaver bliver lettere
+- Jeg lærer nye ting
+- Jeg får bedre idéer
+- Jeg forstår svære ting bedre
+- Jeg bliver bedre til at formulere mig
+- Jeg kan løse flere opgaver selv
+- Jeg får hjælp til tekniske opgaver
+- Jeg oplever ingen særlige fordele
+- Andet + tekstfelt
+
+12. Hvilke problemer eller ulemper oplever du ved AI? (flere svar)
+- AI giver forkerte eller upræcise svar
+- Jeg er i tvivl om, om svarene er rigtige
+- Det kan være svært at formulere det rigtige spørgsmål
+- Jeg er bekymret for privatliv eller data
+- Jeg bruger for meget tid på AI
+- Jeg føler, at jeg bliver for afhængig af AI
+- Jeg stoler for meget på svarene
+- Jeg oplever ingen særlige problemer
+- Andet + tekstfelt
+
+### Arbejde og IT-sikkerhed
+
+13. Bruger du AI i forbindelse med dit arbejde?
+- Ja, ofte
+- Ja, en gang imellem
+- Sjældent
+- Nej
+- Jeg arbejder ikke
+
+Hvis Nej / Jeg arbejder ikke: spring arbejdsgrenen over og afslut.
+
+Hvis Ja, ofte / en gang imellem / sjældent:
+
+14. Hvad bruger du AI til i forbindelse med arbejdet? (flere svar)
+- Skrive eller forbedre tekst
+- E-mails
+- Opsummere dokumenter eller mødenoter
+- Søge efter information
+- Regneark / Excel
+- Analyse
+- Programmering eller tekniske opgaver
+- Planlægning
+- Idéer eller udkast
+- Andet + tekstfelt
+
+15. Når du bruger AI til arbejdsopgaver, arbejder du så nogle gange med oplysninger fra dit arbejde?
+- Ja
+- Nej
+- Ved ikke
+
+Hvis Ja: vis spørgsmål 16.
+Hvis Nej / Ved ikke: spring til spørgsmål 17.
+
+16. Hvilken slags oplysninger kan det være? (flere svar)
+- Almindelig tekst
+- E-mails
+- Dokumenter
+- Regneark eller andre filer
+- Mødenoter
+- Kundeoplysninger
+- Interne oplysninger fra arbejdspladsen
+- Andet + tekstfelt
+- Vil ikke oplyse
+
+Vis tydeligt, at respondenten aldrig må skrive konkrete følsomme data, kundedata, adgangskoder eller fortrolige oplysninger.
+
+17. Tænker du over, hvilke oplysninger du deler med AI, før du bruger det?
+- Altid
+- Ofte
+- Nogle gange
+- Sjældent
+- Aldrig
+- Ved ikke
+
+18. Ved du, om din arbejdsplads har regler for brug af AI?
+- Ja
+- Nej
+- Ved ikke
+
+Hvis Ja: vis spørgsmål 19.
+Hvis Nej / Ved ikke: spring til spørgsmål 20.
+
+19. Synes du, at reglerne er tydelige og nemme at forstå?
+- Ja
+- Delvist
+- Nej
+- Ved ikke
+
+20. Føler du dig tilstrækkeligt informeret om, hvordan AI må bruges på din arbejdsplads?
+- Ja
+- Delvist
+- Nej
+- Ved ikke
+
+### Kort ikke-brugergren
+
+Hvis spørgsmål 6 = Nej:
+
+Hvad er den vigtigste grund til, at du ikke bruger AI?
+- Jeg har ikke brug for det
+- Jeg ved ikke nok om det
+- Jeg ved ikke, hvordan jeg kommer i gang
+- Jeg stoler ikke på svarene
+- Jeg er bekymret for sikkerhed eller privatliv
+- Jeg foretrækker selv at løse mine opgaver
+- Jeg har ikke haft anledning til at prøve det
+- Andet + tekstfelt
+
+Derefter:
+
+Kunne du forestille dig at bruge AI i fremtiden?
+- Ja
+- Måske
+- Nej
+- Ved ikke
+
+Derefter afslutning.
 
 ## Teknisk struktur
 
 Projektet skal fortsat være simpelt og let at dokumentere.
 
-Foretrukken struktur:
-
 ```text
+.github/workflows/pages.yml
 index.html
 styles.css
 questions.js
@@ -131,77 +298,70 @@ README.md
 MASTERPROMPT.md
 ```
 
-Spørgsmål, svarmuligheder og forgreninger skal så vidt muligt ligge centralt i `questions.js`.
+Spørgsmål, svarmuligheder og forgreninger skal ligge centralt i `questions.js`.
 
-Undgå at hardcode spørgeskemaets indhold direkte i HTML.
+Undgå at hardcode spørgeskemaets indhold i HTML.
 
-Hold præsentation, spørgeskemadata, navigation og senere datalagring adskilt.
+Forgreninger gemmes som data, eksempel:
 
-## Datamodel
-
-Brug stabile tekniske feltnavne, f.eks.:
-
-```json
-{
-  "age": "50plus",
-  "gender": "male",
-  "denmark": "yes",
-  "itBackground": "yes",
-  "aiKnowledge": "yes",
-  "aiUse": "daily"
+```js
+next: {
+  byAnswer: {
+    yes: "nextQuestion",
+    no: "finish"
+  }
 }
 ```
 
-Det skal senere være let at analysere data i Excel, Power BI, Python eller lignende.
+Multi-choice fri tekst markeres med `other: true`.
+
+Logisk eksklusive svar som "Ved ikke", "ingen særlige fordele" eller "Vil ikke oplyse" kan markeres med `exclusive: true`, så de ikke kombineres med andre afkrydsninger.
+
+## Datamodel
+
+Brug stabile tekniske feltnavne og værdier, så svar senere kan analyseres i Excel, Power BI, Python eller lignende.
+
+Frie "Andet"-tekster holdes separat fra de faste kategoriværdier.
 
 ## Datalagring og sikkerhed
 
 Svar skal senere kunne gemmes i et regneark eller en cloud-løsning.
 
-Excel på OneDrive er ønsket, men løsningen må ikke sende data usikkert direkte fra GitHub Pages til et privat regneark.
+Excel på OneDrive er ønsket, men data må ikke sendes usikkert direkte fra GitHub Pages til et privat regneark.
 
 Der må aldrig ligge API-nøgler, passwords, Microsoft Graph-secrets eller andre hemmelige oplysninger i frontend-koden eller det offentlige GitHub-repository.
 
-Brug i stedet senere en sikker mellemservice, f.eks.:
+Brug senere en sikker mellemservice, eksempelvis:
 
 - Power Automate
 - Azure Function
 - Google Apps Script
 - Supabase/Firebase/serverless API
 
-Vælg først den endelige datalagring, når spørgeskemaets struktur og felter er fastlagt.
+Vælg først den endelige datalagring, når datamodellen er fastlagt.
 
-## Formulering af spørgsmål
+## Arbejdsform og kvalitetssikring
 
-Du må ikke opfinde et stort endeligt spørgeskema uden først at få det godkendt.
-
-Når nye spørgsmål foreslås, skal de være:
-
-- korte
-- neutrale
-- lette at forstå
-- fokuseret på faktisk adfærd
-- fri for ledende formuleringer
-- egnede til statistisk analyse
-
-## Arbejdsform
-
-Når du ændrer projektet:
+Når projektet ændres:
 
 1. læs eksisterende filer først
 2. bevar fungerende kode
-3. lav små, overskuelige ændringer
+3. tilføj kun godkendte spørgsmål
 4. hold designet konsistent
-5. opdater README, hvis arkitektur eller funktioner ændres væsentligt
-6. opdater MASTERPROMPT, hvis projektets grundregler ændres
-7. undgå hemmeligheder i repository
-8. bevar Git-historikken som dokumentation for AI-assisteret programmering
+5. test relevante beslutningsruter
+6. test radio, checkbox og "Andet"-felter
+7. test Næste/Tilbage
+8. kontroller mobilvisning
+9. opdater README ved væsentlige ændringer
+10. opdater MASTERPROMPT ved ændrede grundregler eller flow
+11. kontroller GitHub Pages deployment efter ændringer
+12. del ikke et offentligt app-link som verificeret, før deploymenten faktisk er gennemført
 
 ## Vigtigt for afgangsprojektet
 
 Appen skal kunne bruges som et konkret eksempel på AI-assisteret programmering.
 
-Derfor skal løsningen være forståelig nok til, at man kan forklare:
+Bevar derfor Git-historikken og dokumentationen, så man kan forklare:
 
 - problem og behov
 - valg af arkitektur
@@ -209,7 +369,6 @@ Derfor skal løsningen være forståelig nok til, at man kan forklare:
 - brugergrænseflade
 - datastruktur
 - sikkerhedsovervejelser
-- versionshistorik i GitHub
+- versionshistorik
+- kvalitetssikring
 - hvordan AI har hjulpet med udviklingen
-
-Fokus skal altid være enkelhed, sikkerhed, dokumentation og praktisk anvendelighed.
