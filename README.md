@@ -14,21 +14,19 @@ Den aktuelle version indeholder:
 
 - mobilvenligt design inspireret af Microsoft Forms og Google Forms
 - ét spørgsmål ad gangen
-- tydelige radio-knapper ved ét muligt svar
+- radio-knapper ved ét svar
 - afkrydsningsfelter ved flere svar
-- "Andet" med tilhørende tekstfelt på multi-choice-spørgsmål
-- næste- og tilbagefunktion
-- dynamisk forgreningslogik
-- diskret fremdriftsindikator, som tilpasser sig den aktuelle rute
-- baggrundsspørgsmål
-- AI-kendskab og AI-brug
-- AI-brugergren
-- arbejds- og IT-sikkerhedsgren
-- kort ikke-brugergren
-- registrering af IT-profil til en senere ekstra IT-faglig gren
-- ingen ekstern datalagring endnu
+- "Andet" med tekstfelt ved multi-choice
+- Næste/Tilbage samt dynamisk "Afslut" på sidste relevante spørgsmål
+- dynamisk fremdriftsindikator
+- baggrundsspørgsmål, AI-brugergren, arbejds-/sikkerhedsgren og kort ikke-brugergren
+- opdateret spørgsmål 5, 8 og 12 efter specifikationen 10. september 2026
+- lokal autosave i browseren med anonymt sessions-id
+- oprydning af gamle gren-svar, hvis respondenten går tilbage og ændrer rute
+- forberedte, men endnu ikke aktive, IT-spørgsmål 23, 24, 28, 29 og 30
+- ingen central cloud-lagring endnu
 
-Den endelige IT-faglige gren er bevidst ikke bygget endnu. Den tilføjes først, når de konkrete spørgsmål er godkendt.
+Den IT-faglige ekstragren aktiveres først, når de manglende spørgsmål 21, 22, 25–27 og 31 er leveret. Appen opfinder ikke de manglende led.
 
 ## Filstruktur
 
@@ -38,33 +36,29 @@ Sporgeskema/
 ├── index.html                  # Appens HTML og hovedlayout
 ├── styles.css                  # Design og mobiltilpasning
 ├── questions.js                # Spørgsmål, svarmuligheder og forgreninger
+├── storage.js                  # Lokal autosave og senere backend-adapter
 ├── app.js                      # App-motor, navigation og state
 ├── README.md                   # Dokumentation
 └── MASTERPROMPT.md             # Masterprompt til videre udvikling
 ```
 
-## Spørgsmål og beslutningstræ
+## Centrale spørgeændringer
 
-Spørgsmålene ligger centralt i `questions.js` som JavaScript-objekter.
+Spørgsmål 5 har nu tre profiler:
 
-Et simpelt spørgsmål ser sådan ud:
+1. ingen særlig IT-faglig baggrund
+2. interesse/noget erfaring med IT, men ikke professionelt IT-arbejde
+3. IT-faglig uddannelse og/eller professionelt IT-arbejde
 
-```js
-age: {
-  number: 1,
-  section: "Baggrund",
-  text: "Hvad er din alder?",
-  type: "single",
-  options: [
-    { value: "under30", label: "Under 30 år" },
-    { value: "30to49", label: "30–49 år" },
-    { value: "50plus", label: "50 år eller derover" }
-  ],
-  next: "gender"
-}
-```
+Kun den sidste profil skal senere åbne den ekstra IT-faglige gren.
 
-Forgreninger beskrives som data i stedet for hardcodede funktioner:
+Spørgsmål 8 bruger nu tydeligt formuleringerne "AI-funktioner i Word", "AI-funktioner i Excel" og "AI-funktioner i Outlook / e-mail", så almindelig brug af programmerne ikke fejlagtigt tælles som AI-brug.
+
+Spørgsmål 12 bruger den neutrale formulering: "Det kan være svært at vurdere, hvornår jeg kan stole på svarene" og bevarer "Jeg kan blive for afhængig af AI".
+
+## Beslutningstræ og datakvalitet
+
+Spørgsmål ligger centralt i `questions.js`. Forgreninger beskrives som data, fx:
 
 ```js
 next: {
@@ -76,132 +70,78 @@ next: {
 }
 ```
 
-Det gør beslutningstræet lettere at læse, teste og ændre.
+Når en respondent går tilbage og ændrer et svar, sletter appen svar fra den gamle, ikke længere relevante gren. Det forhindrer skjulte og modstridende data i den senere eksport.
 
-## Flere svar og "Andet"
+## Multi-choice og "Andet"
 
-Et multi-choice-spørgsmål bruger:
+Multi-choice bruger `type: "multi"`.
 
-```js
-type: "multi"
-```
-
-En fri svarmulighed markeres med:
+Fri tekst markeres med:
 
 ```js
 { value: "other", label: "Andet", other: true }
 ```
 
-App-motoren viser derefter automatisk et tekstfelt, når brugeren markerer denne mulighed. Næste-knappen aktiveres først, når tekstfeltet indeholder et svar.
+Appen viser automatisk et tekstfelt, og brugeren kan ikke fortsætte med "Andet" markeret uden at skrive noget.
 
-Muligheder som logisk ikke bør kombineres med andre svar, eksempelvis "Ved ikke" eller "Ingen særlige problemer", kan markeres:
+Eksklusive svar som "Ved ikke" eller "Ingen særlige problemer" kan markeres med `exclusive: true`.
 
-```js
-{ value: "dontKnow", label: "Ved ikke", exclusive: true }
-```
+## Autosave
 
-## Aktuelt flow
+`storage.js` indeholder lagringslaget.
 
-Hovedflowet er:
+I udviklingsversionen gemmes en anonym kladde i browserens `localStorage` efter hvert ændret svar. Et anonymt sessions-id følger kladden.
 
-```text
-Alder
-→ Køn
-→ Bor i Danmark
-→ Kendskab til AI
-   ├─ Nej / Ved ikke → afslutning
-   └─ Ja
-      → IT-profil
-      → Bruger AI?
-         ├─ Nej → kort ikke-brugergren → afslutning
-         └─ Ja/sjældent
-            → anvendelse af AI
-            → AI-værktøjer
-            → ændrede arbejdsmetoder
-            → fordele
-            → problemer/ulemper
-            → AI på arbejde
-               ├─ Nej / arbejder ikke → afslutning
-               └─ Ja
-                  → arbejdsopgaver
-                  → arbejdsoplysninger
-                  → databevidsthed
-                  → regler på arbejdspladsen
-                  → information om tilladt AI-brug
-                  → afslutning
-```
+Dette beskytter mod tab ved fx genindlæsning på samme enhed, men er **ikke** central dataindsamling. Hvis respondenten lukker browseren, kan forskeren ikke hente kladden fra en anden enhed eller server.
 
-Spørgsmål 10, 16 og 19 vises kun, når et tidligere svar gør dem relevante.
+Når cloud-backend vælges, skal `storage.js` ændres til at sende autosave via HTTPS til en sikker mellemservice. Frontend må aldrig indeholde API-nøgler eller andre hemmeligheder.
 
-## Fremdriftsindikator
+## Afslutning og resultatmail
 
-Da respondenter kan få forskellige ruter, bruger appen ikke et fast samlet antal spørgsmål. I stedet beregner den den længste sandsynlige resterende rute ud fra de svar, der allerede er givet.
+Den endelige afslutningstekst er forberedt i `questions.js`, men må først vises som "registreret", når en central backend faktisk har bekræftet, at besvarelsen er gemt.
 
-Når en forgrening bliver afgjort, justeres den estimerede længde automatisk.
+Efter en bekræftet central gemning skal appen senere kunne vise et separat frivilligt valg om at modtage en kort opsummering af resultatet. E-mailadressen skal gemmes separat fra spørgeskemabesvarelsen og uden kobling til sessions-id eller svar.
 
-## Arkitektur
+I den nuværende udviklingsversion indsamles der derfor ikke e-mailadresser.
 
-Frontend er ren HTML, CSS og JavaScript. Det gør løsningen enkel, gennemsigtig og velegnet til GitHub Pages.
+## Forberedt IT-faglig gren
 
-Appen er opdelt i fire logiske lag:
+Specifikationen indeholder allerede indhold til spørgsmål 23, 24, 28, 29 og 30. De ligger i `pendingITQuestions` i `questions.js`, men er ikke koblet ind i den aktive spørgerute.
 
-1. **Præsentation** – `index.html` og `styles.css`
-2. **Spørgeskemadata** – `questions.js`
-3. **Navigation og state** – `app.js`
-4. **Datalagring** – tilføjes senere som separat lag
-
-## Datamodel
-
-Svar bruger stabile tekniske feltnavne, fx:
-
-```json
-{
-  "age": "50plus",
-  "gender": "male",
-  "denmark": "yes",
-  "aiKnowledge": "yes",
-  "itProfile": "professional",
-  "aiUse": "daily",
-  "aiUses": ["writing", "excel", "programming"]
-}
-```
-
-Frie "Andet"-svar holdes separat fra de faste kategorier, så data senere kan analyseres rent.
+Det skyldes, at spørgsmål 21, 22, 25, 26, 27 og 31 endnu ikke er leveret. Når de kommer, kan hele IT-grenen bygges uden at gætte på indhold eller forgreninger.
 
 ## Sikkerhed
 
 GitHub Pages er en offentlig statisk frontend. Derfor må adgangsnøgler, passwords, Microsoft Graph-tokens eller andre hemmeligheder aldrig ligge i JavaScript-koden eller repositoryet.
 
-Appen må heller aldrig bede respondenten om at skrive konkrete følsomme data, kundedata, adgangskoder eller fortrolige oplysninger.
+Appen må heller aldrig bede respondenten skrive konkrete følsomme data, kundedata, adgangskoder eller fortrolige oplysninger.
 
-Når ekstern lagring tilføjes, bør svar sendes via HTTPS til en sikker mellemservice.
-
-Mulige løsninger:
+Mulige senere backend-løsninger:
 
 - Microsoft Power Automate eller Azure Function til Excel/OneDrive
-- Google Apps Script eller anden backend til Google Sheets
-- Supabase, Firebase eller en lille serverless database/API
-
-Den endelige løsning vælges først, når spørgeskemaets datamodel er fastlagt.
+- Google Apps Script til Google Sheets
+- Supabase/Firebase/serverless API
 
 ## GitHub Pages
 
-Appen deployes automatisk fra `main` via GitHub Actions og er beregnet til:
+Appen deployes automatisk fra `main` via GitHub Actions:
 
 `https://ronnykisbye.github.io/Sporgeskema/`
 
-## Videre udvikling
+## Kvalitetssikring
 
-Næste større trin er:
+Efter ændringer skal følgende kontrolleres:
 
-1. modtage og tilføje den godkendte IT-faglige gren
-2. teste alle ruter på mobil, tablet og pc
-3. gennemgå ordlyd og svartid
-4. fastlægge datamodel og eksportfelter
-5. vælge sikker datalagring
-6. tilføje eventuel samtykke- og privatlivstekst
-7. afprøve analysedata i Excel, Power BI eller Python
+1. alle aktive `next`-referencer peger på eksisterende spørgsmål eller `finish`
+2. korte og lange ruter afsluttes korrekt
+3. sidste relevante knap hedder `Afslut`
+4. Tilbage følger den valgte rute
+5. ændring af tidligere svar fjerner gamle gren-data
+6. radio/checkbox/Andet-felter fungerer korrekt
+7. autosave kaldes efter svarændringer
+8. GitHub Pages-workflowet gennemfører uden fejl
+9. offentligt link testes efter deployment
 
 ## Afgangsprojekt og AI-assisteret programmering
 
-Projektet kan bruges som dokumenteret eksempel på AI-assisteret programmering. Git-historikken, README-filen og masterprompten bør derfor bevares, så udviklingsprocessen kan beskrives og reproduceres i afgangsprojektet.
+Projektet kan bruges som dokumenteret eksempel på AI-assisteret programmering. Git-historik, README og MASTERPROMPT skal derfor bevares, så udviklingsproces, beslutninger, sikkerhed og kvalitetssikring kan dokumenteres.
