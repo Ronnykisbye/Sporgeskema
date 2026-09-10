@@ -10,6 +10,7 @@
     started: false,
     currentId: null,
     answers: {},
+    otherText: {},
     history: [],
     completed: false
   };
@@ -23,6 +24,15 @@
       .replaceAll("'", "&#039;");
   }
 
+  function resetState() {
+    state.started = false;
+    state.currentId = null;
+    state.answers = {};
+    state.otherText = {};
+    state.history = [];
+    state.completed = false;
+  }
+
   function renderWelcome() {
     state.started = false;
     state.currentId = null;
@@ -34,12 +44,12 @@
         <h2>Velkommen</h2>
         <p>Spørgeskemaet vises ét spørgsmål ad gangen og tilpasser sig dine svar.</p>
         <div class="info-box">
-          Dette er en første teknisk version. Svar gemmes endnu ikke eksternt. Senere kobler vi en sikker dataløsning på uden at lægge adgangsnøgler i GitHub Pages.
+          Svar gemmes endnu ikke eksternt. Denne version bruges til at afprøve spørgsmål, brugeroplevelse og forgreninger, før en sikker dataløsning kobles på.
         </div>
       </div>`;
 
     progressBar.style.width = "0%";
-    progressText.textContent = "Klar";
+    progressText.textContent = "Klar til at starte";
     backBtn.disabled = true;
     nextBtn.disabled = false;
     nextBtn.textContent = "Start";
@@ -61,21 +71,51 @@
         ? Array.isArray(selected) && selected.includes(option.value)
         : selected === option.value;
 
+      const otherField = option.other ? `
+        <div class="other-wrap ${checked ? "visible" : ""}" data-other-for="${esc(option.value)}">
+          <label class="other-label" for="${esc(id)}-${esc(option.value)}-text">Skriv dit svar</label>
+          <input
+            class="other-input"
+            id="${esc(id)}-${esc(option.value)}-text"
+            type="text"
+            maxlength="250"
+            autocomplete="off"
+            value="${esc(state.otherText[id] || "")}"
+            ${checked ? "" : "disabled"}
+          />
+        </div>` : "";
+
       return `
-        <label class="option ${checked ? "selected" : ""}">
-          <input type="${inputType}" name="${esc(id)}" value="${esc(option.value)}" ${checked ? "checked" : ""} />
-          <span>${esc(option.label)}</span>
-        </label>`;
+        <div class="option-group">
+          <label class="option ${checked ? "selected" : ""}">
+            <input
+              type="${inputType}"
+              name="${esc(id)}"
+              value="${esc(option.value)}"
+              data-exclusive="${option.exclusive ? "true" : "false"}"
+              data-other="${option.other ? "true" : "false"}"
+              ${checked ? "checked" : ""}
+            />
+            <span>${esc(option.label)}</span>
+          </label>
+          ${otherField}
+        </div>`;
     }).join("");
 
+    const numberText = q.number ? `Spørgsmål ${q.number} · ${q.section}` : q.section;
+
     screen.innerHTML = `
-      <p class="question-number">${esc(q.section || "Spørgsmål")}</p>
+      <p class="question-number">${esc(numberText || "Spørgsmål")}</p>
       <h2 class="question-title">${esc(q.text)}</h2>
       ${q.help ? `<p class="question-help">${esc(q.help)}</p>` : ""}
       <div class="options">${optionsHtml}</div>`;
 
-    screen.querySelectorAll("input").forEach((input) => {
+    screen.querySelectorAll('.option input[type="radio"], .option input[type="checkbox"]').forEach((input) => {
       input.addEventListener("change", handleAnswerChange);
+    });
+
+    screen.querySelectorAll(".other-input").forEach((input) => {
+      input.addEventListener("input", handleOtherTextInput);
     });
 
     updateControls();
@@ -83,22 +123,55 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleAnswerChange() {
+  function handleAnswerChange(event) {
     const q = config.questions[state.currentId];
-    const inputs = [...screen.querySelectorAll("input")];
+    const changed = event.target;
+    const choiceInputs = [...screen.querySelectorAll('.option input[type="radio"], .option input[type="checkbox"]')];
 
     if (q.type === "multi") {
-      state.answers[state.currentId] = inputs.filter(i => i.checked).map(i => i.value);
+      if (changed.checked && changed.dataset.exclusive === "true") {
+        choiceInputs.forEach((input) => {
+          if (input !== changed) input.checked = false;
+        });
+      } else if (changed.checked) {
+        choiceInputs.forEach((input) => {
+          if (input.dataset.exclusive === "true") input.checked = false;
+        });
+      }
+
+      state.answers[state.currentId] = choiceInputs.filter(i => i.checked).map(i => i.value);
     } else {
-      const checked = inputs.find(i => i.checked);
+      const checked = choiceInputs.find(i => i.checked);
       state.answers[state.currentId] = checked ? checked.value : null;
     }
 
     screen.querySelectorAll(".option").forEach(label => {
-      const input = label.querySelector("input");
-      label.classList.toggle("selected", input.checked);
+      const input = label.querySelector('input[type="radio"], input[type="checkbox"]');
+      label.classList.toggle("selected", Boolean(input && input.checked));
     });
 
+    screen.querySelectorAll(".option-group").forEach(group => {
+      const choice = group.querySelector('.option input[data-other="true"]');
+      const wrap = group.querySelector(".other-wrap");
+      const textInput = group.querySelector(".other-input");
+      if (!choice || !wrap || !textInput) return;
+
+      wrap.classList.toggle("visible", choice.checked);
+      textInput.disabled = !choice.checked;
+      if (choice.checked) {
+        setTimeout(() => textInput.focus(), 0);
+      } else {
+        state.otherText[state.currentId] = "";
+        textInput.value = "";
+      }
+    });
+
+    updateControls();
+    updateProgress();
+  }
+
+  function handleOtherTextInput(event) {
+    state.otherText[state.currentId] = event.target.value;
     updateControls();
   }
 
@@ -106,12 +179,43 @@
     const q = config.questions[id];
     const answer = state.answers[id];
     if (!q) return false;
-    if (q.type === "multi") return Array.isArray(answer) && answer.length > 0;
-    return answer !== undefined && answer !== null && answer !== "";
+
+    if (q.type === "multi") {
+      if (!Array.isArray(answer) || answer.length === 0) return false;
+      const otherOption = q.options.find(option => option.other && answer.includes(option.value));
+      if (otherOption && !(state.otherText[id] || "").trim()) return false;
+      return true;
+    }
+
+    if (answer === undefined || answer === null || answer === "") return false;
+    const selectedOption = q.options.find(option => option.value === answer);
+    if (selectedOption?.other && !(state.otherText[id] || "").trim()) return false;
+    return true;
+  }
+
+  function getNextCandidates(q, answer, assumeUnknown = false) {
+    if (!q || !q.next) return [config.finishId];
+    if (typeof q.next === "string") return [q.next];
+
+    if (q.next.byAnswer) {
+      if (answer !== undefined && answer !== null && answer !== "") {
+        const mapped = q.next.byAnswer[answer];
+        return [mapped || q.next.default || config.finishId];
+      }
+
+      if (assumeUnknown) {
+        return [...new Set([
+          ...Object.values(q.next.byAnswer),
+          ...(q.next.default ? [q.next.default] : [])
+        ])];
+      }
+    }
+
+    return [q.next.default || config.finishId];
   }
 
   function resolveNext(q) {
-    return typeof q.next === "function" ? q.next(state.answers) : q.next;
+    return getNextCandidates(q, state.answers[state.currentId], false)[0];
   }
 
   function goNext() {
@@ -125,7 +229,7 @@
     const q = config.questions[state.currentId];
     const nextId = resolveNext(q);
 
-    if (!nextId || nextId === "finish") {
+    if (!nextId || nextId === config.finishId) {
       finishSurvey();
       return;
     }
@@ -152,28 +256,46 @@
     nextBtn.disabled = state.started && !hasAnswer(state.currentId);
   }
 
+  function longestRemainingFrom(id, visited = new Set()) {
+    if (!id || id === config.finishId || visited.has(id)) return 0;
+    const q = config.questions[id];
+    if (!q) return 0;
+
+    const nextVisited = new Set(visited);
+    nextVisited.add(id);
+    const answer = state.answers[id];
+    const candidates = getNextCandidates(q, answer, true);
+    const remaining = candidates.map(nextId => longestRemainingFrom(nextId, nextVisited));
+    return 1 + Math.max(0, ...remaining);
+  }
+
   function updateProgress() {
-    const answeredCount = Object.values(state.answers).filter(value =>
-      Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null && value !== ""
-    ).length;
-    const minimumKnownSteps = 6;
-    const percent = Math.min(95, Math.round((answeredCount / minimumKnownSteps) * 100));
+    if (!state.started || !state.currentId) return;
+
+    const completedBeforeCurrent = state.history.length;
+    const estimatedRemainingIncludingCurrent = longestRemainingFrom(state.currentId);
+    const estimatedTotal = completedBeforeCurrent + estimatedRemainingIncludingCurrent;
+    const completedIncludingCurrent = completedBeforeCurrent + (hasAnswer(state.currentId) ? 1 : 0);
+    const percent = estimatedTotal > 0
+      ? Math.min(98, Math.round((completedIncludingCurrent / estimatedTotal) * 100))
+      : 0;
+
     progressBar.style.width = `${percent}%`;
-    progressText.textContent = `${answeredCount} svar registreret`;
+    progressText.textContent = `Ca. ${completedIncludingCurrent} af ${estimatedTotal} på denne rute`;
   }
 
   function finishSurvey() {
     state.completed = true;
     state.currentId = null;
     progressBar.style.width = "100%";
-    progressText.textContent = "Foreløbig rute gennemført";
+    progressText.textContent = "Rute gennemført";
 
     screen.innerHTML = `
       <div class="complete">
-        <h2>Tak</h2>
-        <p>Du har gennemført den foreløbige spørgerute.</p>
+        <h2>Tak for dine svar</h2>
+        <p>Du har gennemført de spørgsmål, der var relevante for din rute.</p>
         <div class="info-box">
-          I denne prototype bliver svar kun holdt midlertidigt i browseren og sendes ikke til et regneark eller en server.
+          I denne udviklingsversion bliver svar kun holdt midlertidigt i browseren og sendes ikke til et regneark eller en server.
         </div>
       </div>`;
 
@@ -185,12 +307,13 @@
   backBtn.addEventListener("click", goBack);
   nextBtn.addEventListener("click", () => {
     if (state.completed) {
-      state.answers = {};
+      resetState();
       renderWelcome();
     } else {
       goNext();
     }
   });
 
+  resetState();
   renderWelcome();
 })();
