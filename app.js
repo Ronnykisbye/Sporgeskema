@@ -218,6 +218,13 @@
     return getNextCandidates(q, state.answers[state.currentId], false)[0];
   }
 
+  function isCurrentQuestionLast() {
+    if (!state.started || !state.currentId || !hasAnswer(state.currentId)) return false;
+    const q = config.questions[state.currentId];
+    const nextId = resolveNext(q);
+    return !nextId || nextId === config.finishId;
+  }
+
   function goNext() {
     if (!state.started) {
       renderQuestion(config.startQuestionId);
@@ -252,7 +259,7 @@
 
   function updateControls() {
     backBtn.disabled = !state.started || state.history.length === 0;
-    nextBtn.textContent = "Næste";
+    nextBtn.textContent = isCurrentQuestionLast() ? "Afslut" : "Næste";
     nextBtn.disabled = state.started && !hasAnswer(state.currentId);
   }
 
