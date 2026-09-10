@@ -1,11 +1,15 @@
-// Spørgsmålene ligger som data, så indhold og forgreninger kan ændres uden at ændre app-motoren.
-// type: "single" = ét svar (radio), "multi" = flere svar (checkbox)
-// next kan være et id eller en funktion, som vælger næste spørgsmål ud fra svarene.
+// Spørgsmålene ligger centralt som data, så tekst, svar og forgreninger kan ændres uden at ændre app-motoren.
+// type: "single" = ét svar (radio), "multi" = flere svar (checkbox).
+// next kan være et id eller et objekt med byAnswer/default til beslutningstræ.
+// På multi-spørgsmål markeres en fri svarmulighed med other: true.
+// En logisk eksklusiv multi-mulighed (fx "Ved ikke") kan markeres med exclusive: true.
 
 window.SURVEY_CONFIG = {
   startQuestionId: "age",
+  finishId: "finish",
   questions: {
     age: {
+      number: 1,
       section: "Baggrund",
       text: "Hvad er din alder?",
       type: "single",
@@ -18,8 +22,9 @@ window.SURVEY_CONFIG = {
     },
 
     gender: {
+      number: 2,
       section: "Baggrund",
-      text: "Hvad er dit køn?",
+      text: "Køn",
       type: "single",
       options: [
         { value: "male", label: "Mand" },
@@ -30,19 +35,9 @@ window.SURVEY_CONFIG = {
     },
 
     denmark: {
+      number: 3,
       section: "Baggrund",
       text: "Bor du i Danmark?",
-      type: "single",
-      options: [
-        { value: "yes", label: "Ja" },
-        { value: "no", label: "Nej" }
-      ],
-      next: "itBackground"
-    },
-
-    itBackground: {
-      section: "Baggrund",
-      text: "Har du IT-faglig uddannelse eller arbejder du med IT?",
       type: "single",
       options: [
         { value: "yes", label: "Ja" },
@@ -52,6 +47,7 @@ window.SURVEY_CONFIG = {
     },
 
     aiKnowledge: {
+      number: 4,
       section: "AI-kendskab",
       text: "Har du kendskab til AI-værktøjer, f.eks. ChatGPT, Copilot, Gemini eller andre?",
       type: "single",
@@ -60,10 +56,31 @@ window.SURVEY_CONFIG = {
         { value: "no", label: "Nej" },
         { value: "dontKnow", label: "Ved ikke" }
       ],
-      next: (answers) => answers.aiKnowledge === "yes" ? "aiUse" : "nonUserReasonPlaceholder"
+      next: {
+        byAnswer: {
+          yes: "itProfile",
+          no: "finish",
+          dontKnow: "finish"
+        }
+      }
+    },
+
+    itProfile: {
+      number: 5,
+      section: "Baggrund",
+      text: "Hvilken beskrivelse passer bedst på dig?",
+      type: "single",
+      options: [
+        { value: "ordinary", label: "Jeg er almindelig IT-bruger uden særlig IT-faglig baggrund" },
+        { value: "interested", label: "Jeg har interesse for eller lidt erfaring med IT" },
+        { value: "educated", label: "Jeg har en IT-faglig uddannelse" },
+        { value: "professional", label: "Jeg arbejder eller har arbejdet professionelt med IT" }
+      ],
+      next: "aiUse"
     },
 
     aiUse: {
+      number: 6,
       section: "Brug af AI",
       text: "Bruger du selv AI-værktøjer?",
       type: "single",
@@ -74,39 +91,323 @@ window.SURVEY_CONFIG = {
         { value: "rarely", label: "Sjældent" },
         { value: "no", label: "Nej" }
       ],
-      next: (answers) => answers.aiUse === "no" ? "nonUserReasonPlaceholder" : "activeUserPlaceholder"
+      next: {
+        byAnswer: {
+          daily: "aiUses",
+          weekly: "aiUses",
+          sometimes: "aiUses",
+          rarely: "aiUses",
+          no: "nonUserReason"
+        }
+      }
     },
 
-    // Midlertidige knudepunkter. Disse erstattes senere af de endelige spørgsmål.
-    activeUserPlaceholder: {
-      section: "Næste gren",
-      text: "Aktiv AI-bruger",
-      help: "Denne gren er forberedt til senere spørgsmål om anvendelse, værktøjer, ændrede arbejdsmetoder, fordele/ulemper, arbejde og IT-sikkerhed.",
-      type: "single",
+    aiUses: {
+      number: 7,
+      section: "AI-bruger",
+      text: "Hvad bruger du AI til?",
+      help: "Du kan vælge flere svar.",
+      type: "multi",
       options: [
-        { value: "continue", label: "Fortsæt til foreløbig afslutning" }
+        { value: "information", label: "Søge efter information" },
+        { value: "writing", label: "Skrive eller forbedre tekst" },
+        { value: "translation", label: "Oversætte" },
+        { value: "summaries", label: "Opsummere tekst eller dokumenter" },
+        { value: "email", label: "Skrive eller besvare e-mails" },
+        { value: "study", label: "Hjælp til studie eller undervisning" },
+        { value: "excel", label: "Regneark / Excel" },
+        { value: "programming", label: "Programmering" },
+        { value: "databases", label: "Databaser" },
+        { value: "automation", label: "Automatisering" },
+        { value: "security", label: "IT-sikkerhed" },
+        { value: "images", label: "Billeder eller grafik" },
+        { value: "ideas", label: "Idéer og inspiration" },
+        { value: "planning", label: "Planlægning" },
+        { value: "other", label: "Andet", other: true }
       ],
-      next: (answers) => answers.itBackground === "yes" ? "itBranchPlaceholder" : "finish"
+      next: "aiTools"
     },
 
-    nonUserReasonPlaceholder: {
-      section: "Næste gren",
-      text: "Kort rute for ikke-brugere",
-      help: "Denne gren er forberedt til senere spørgsmål om årsager til ikke at bruge AI, mulig fremtidig brug og tilbageholdenhed.",
-      type: "single",
+    aiTools: {
+      number: 8,
+      section: "AI-bruger",
+      text: "Hvilke AI-værktøjer eller programmer med AI-funktioner bruger du?",
+      help: "Du kan vælge flere svar.",
+      type: "multi",
       options: [
-        { value: "continue", label: "Fortsæt til foreløbig afslutning" }
+        { value: "chatgpt", label: "ChatGPT" },
+        { value: "copilot", label: "Microsoft Copilot" },
+        { value: "gemini", label: "Google Gemini" },
+        { value: "claude", label: "Claude" },
+        { value: "perplexity", label: "Perplexity" },
+        { value: "word", label: "AI i Word" },
+        { value: "excel", label: "AI i Excel" },
+        { value: "outlook", label: "AI i Outlook / e-mail" },
+        { value: "search", label: "AI i søgemaskiner" },
+        { value: "other", label: "Andre AI-værktøjer", other: true },
+        { value: "dontKnow", label: "Ved ikke", exclusive: true }
       ],
-      next: (answers) => answers.itBackground === "yes" ? "itBranchPlaceholder" : "finish"
+      next: "aiChanged"
     },
 
-    itBranchPlaceholder: {
-      section: "IT-faglig gren",
-      text: "IT-faglig baggrund registreret",
-      help: "Denne gren er forberedt til senere spørgsmål om programmering, databaser, automatisering, IT-sikkerhed og fremtidige kompetencer.",
+    aiChanged: {
+      number: 9,
+      section: "AI-bruger",
+      text: "Har AI ændret den måde, du løser dine opgaver på?",
       type: "single",
       options: [
-        { value: "continue", label: "Fortsæt til foreløbig afslutning" }
+        { value: "much", label: "Ja, meget" },
+        { value: "some", label: "Ja, noget" },
+        { value: "little", label: "Kun lidt" },
+        { value: "no", label: "Nej" },
+        { value: "dontKnow", label: "Ved ikke" }
+      ],
+      next: {
+        byAnswer: {
+          much: "changes",
+          some: "changes",
+          little: "changes",
+          no: "benefits",
+          dontKnow: "benefits"
+        }
+      }
+    },
+
+    changes: {
+      number: 10,
+      section: "AI-bruger",
+      text: "Hvad har ændret sig for dig?",
+      help: "Du kan vælge flere svar.",
+      type: "multi",
+      options: [
+        { value: "faster", label: "Jeg løser opgaver hurtigere" },
+        { value: "start", label: "Jeg får lettere ved at komme i gang" },
+        { value: "hardTasks", label: "Jeg kan løse opgaver, jeg tidligere havde svært ved" },
+        { value: "searchDifferent", label: "Jeg søger information på en anden måde" },
+        { value: "writeLess", label: "Jeg skriver mindre selv" },
+        { value: "ideas", label: "Jeg bruger AI til idéer og inspiration" },
+        { value: "lessRoutine", label: "Jeg bruger mindre tid på rutineopgaver" },
+        { value: "moreChecking", label: "Jeg bruger mere tid på at kontrollere svar" },
+        { value: "independent", label: "Jeg arbejder mere selvstændigt" },
+        { value: "dependent", label: "Jeg er blevet mere afhængig af AI" },
+        { value: "other", label: "Andet", other: true }
+      ],
+      next: "benefits"
+    },
+
+    benefits: {
+      number: 11,
+      section: "AI-bruger",
+      text: "Hvilke fordele oplever du ved AI?",
+      help: "Du kan vælge flere svar.",
+      type: "multi",
+      options: [
+        { value: "time", label: "Jeg sparer tid" },
+        { value: "easier", label: "Opgaver bliver lettere" },
+        { value: "learn", label: "Jeg lærer nye ting" },
+        { value: "ideas", label: "Jeg får bedre idéer" },
+        { value: "understand", label: "Jeg forstår svære ting bedre" },
+        { value: "formulate", label: "Jeg bliver bedre til at formulere mig" },
+        { value: "moreSelf", label: "Jeg kan løse flere opgaver selv" },
+        { value: "technical", label: "Jeg får hjælp til tekniske opgaver" },
+        { value: "none", label: "Jeg oplever ingen særlige fordele", exclusive: true },
+        { value: "other", label: "Andet", other: true }
+      ],
+      next: "problems"
+    },
+
+    problems: {
+      number: 12,
+      section: "AI-bruger",
+      text: "Hvilke problemer eller ulemper oplever du ved AI?",
+      help: "Du kan vælge flere svar.",
+      type: "multi",
+      options: [
+        { value: "wrong", label: "AI giver forkerte eller upræcise svar" },
+        { value: "uncertain", label: "Jeg er i tvivl om, om svarene er rigtige" },
+        { value: "prompting", label: "Det kan være svært at formulere det rigtige spørgsmål" },
+        { value: "privacy", label: "Jeg er bekymret for privatliv eller data" },
+        { value: "tooMuchTime", label: "Jeg bruger for meget tid på AI" },
+        { value: "dependent", label: "Jeg føler, at jeg bliver for afhængig af AI" },
+        { value: "trustTooMuch", label: "Jeg stoler for meget på svarene" },
+        { value: "none", label: "Jeg oplever ingen særlige problemer", exclusive: true },
+        { value: "other", label: "Andet", other: true }
+      ],
+      next: "workUse"
+    },
+
+    workUse: {
+      number: 13,
+      section: "Arbejde og IT-sikkerhed",
+      text: "Bruger du AI i forbindelse med dit arbejde?",
+      type: "single",
+      options: [
+        { value: "often", label: "Ja, ofte" },
+        { value: "sometimes", label: "Ja, en gang imellem" },
+        { value: "rarely", label: "Sjældent" },
+        { value: "no", label: "Nej" },
+        { value: "notWorking", label: "Jeg arbejder ikke" }
+      ],
+      next: {
+        byAnswer: {
+          often: "workTasks",
+          sometimes: "workTasks",
+          rarely: "workTasks",
+          no: "finish",
+          notWorking: "finish"
+        }
+      }
+    },
+
+    workTasks: {
+      number: 14,
+      section: "Arbejde og IT-sikkerhed",
+      text: "Hvad bruger du AI til i forbindelse med arbejdet?",
+      help: "Du kan vælge flere svar.",
+      type: "multi",
+      options: [
+        { value: "writing", label: "Skrive eller forbedre tekst" },
+        { value: "email", label: "E-mails" },
+        { value: "summaries", label: "Opsummere dokumenter eller mødenoter" },
+        { value: "information", label: "Søge efter information" },
+        { value: "excel", label: "Regneark / Excel" },
+        { value: "analysis", label: "Analyse" },
+        { value: "technical", label: "Programmering eller tekniske opgaver" },
+        { value: "planning", label: "Planlægning" },
+        { value: "ideas", label: "Idéer eller udkast" },
+        { value: "other", label: "Andet", other: true }
+      ],
+      next: "workData"
+    },
+
+    workData: {
+      number: 15,
+      section: "Arbejde og IT-sikkerhed",
+      text: "Når du bruger AI til arbejdsopgaver, arbejder du så nogle gange med oplysninger fra dit arbejde?",
+      type: "single",
+      options: [
+        { value: "yes", label: "Ja" },
+        { value: "no", label: "Nej" },
+        { value: "dontKnow", label: "Ved ikke" }
+      ],
+      next: {
+        byAnswer: {
+          yes: "workDataTypes",
+          no: "dataAwareness",
+          dontKnow: "dataAwareness"
+        }
+      }
+    },
+
+    workDataTypes: {
+      number: 16,
+      section: "Arbejde og IT-sikkerhed",
+      text: "Hvilken slags oplysninger kan det være?",
+      help: "Du kan vælge flere svar. Skriv aldrig konkrete følsomme data, kundedata, adgangskoder eller fortrolige oplysninger i spørgeskemaet.",
+      type: "multi",
+      options: [
+        { value: "text", label: "Almindelig tekst" },
+        { value: "email", label: "E-mails" },
+        { value: "documents", label: "Dokumenter" },
+        { value: "files", label: "Regneark eller andre filer" },
+        { value: "meetingNotes", label: "Mødenoter" },
+        { value: "customer", label: "Kundeoplysninger" },
+        { value: "internal", label: "Interne oplysninger fra arbejdspladsen" },
+        { value: "other", label: "Andet", other: true },
+        { value: "noAnswer", label: "Vil ikke oplyse", exclusive: true }
+      ],
+      next: "dataAwareness"
+    },
+
+    dataAwareness: {
+      number: 17,
+      section: "Arbejde og IT-sikkerhed",
+      text: "Tænker du over, hvilke oplysninger du deler med AI, før du bruger det?",
+      type: "single",
+      options: [
+        { value: "always", label: "Altid" },
+        { value: "often", label: "Ofte" },
+        { value: "sometimes", label: "Nogle gange" },
+        { value: "rarely", label: "Sjældent" },
+        { value: "never", label: "Aldrig" },
+        { value: "dontKnow", label: "Ved ikke" }
+      ],
+      next: "workRules"
+    },
+
+    workRules: {
+      number: 18,
+      section: "Arbejde og IT-sikkerhed",
+      text: "Ved du, om din arbejdsplads har regler for brug af AI?",
+      type: "single",
+      options: [
+        { value: "yes", label: "Ja" },
+        { value: "no", label: "Nej" },
+        { value: "dontKnow", label: "Ved ikke" }
+      ],
+      next: {
+        byAnswer: {
+          yes: "rulesClear",
+          no: "informed",
+          dontKnow: "informed"
+        }
+      }
+    },
+
+    rulesClear: {
+      number: 19,
+      section: "Arbejde og IT-sikkerhed",
+      text: "Synes du, at reglerne er tydelige og nemme at forstå?",
+      type: "single",
+      options: [
+        { value: "yes", label: "Ja" },
+        { value: "partial", label: "Delvist" },
+        { value: "no", label: "Nej" },
+        { value: "dontKnow", label: "Ved ikke" }
+      ],
+      next: "informed"
+    },
+
+    informed: {
+      number: 20,
+      section: "Arbejde og IT-sikkerhed",
+      text: "Føler du dig tilstrækkeligt informeret om, hvordan AI må bruges på din arbejdsplads?",
+      type: "single",
+      options: [
+        { value: "yes", label: "Ja" },
+        { value: "partial", label: "Delvist" },
+        { value: "no", label: "Nej" },
+        { value: "dontKnow", label: "Ved ikke" }
+      ],
+      next: "finish"
+    },
+
+    nonUserReason: {
+      section: "Kort rute – bruger ikke AI",
+      text: "Hvad er den vigtigste grund til, at du ikke bruger AI?",
+      type: "single",
+      options: [
+        { value: "noNeed", label: "Jeg har ikke brug for det" },
+        { value: "notEnoughKnowledge", label: "Jeg ved ikke nok om det" },
+        { value: "dontKnowHow", label: "Jeg ved ikke, hvordan jeg kommer i gang" },
+        { value: "dontTrust", label: "Jeg stoler ikke på svarene" },
+        { value: "securityPrivacy", label: "Jeg er bekymret for sikkerhed eller privatliv" },
+        { value: "preferSelf", label: "Jeg foretrækker selv at løse mine opgaver" },
+        { value: "notTried", label: "Jeg har ikke haft anledning til at prøve det" },
+        { value: "other", label: "Andet", other: true }
+      ],
+      next: "futureUse"
+    },
+
+    futureUse: {
+      section: "Kort rute – bruger ikke AI",
+      text: "Kunne du forestille dig at bruge AI i fremtiden?",
+      type: "single",
+      options: [
+        { value: "yes", label: "Ja" },
+        { value: "maybe", label: "Måske" },
+        { value: "no", label: "Nej" },
+        { value: "dontKnow", label: "Ved ikke" }
       ],
       next: "finish"
     }
