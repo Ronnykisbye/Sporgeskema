@@ -7,6 +7,11 @@
 window.SURVEY_CONFIG = {
   startQuestionId: "age",
   finishId: "finish",
+  completionText: "Tak for din hjælp og for den tid, du har brugt på undersøgelsen. Dit svar er nu registreret og vil blive brugt som en del af mit afgangsprojekt om AI og brugen af AI i IT og hverdagen.",
+  resultInterest: {
+    question: "Vil du gerne modtage en kort opsummering af resultatet, når undersøgelsen er afsluttet?",
+    privacyText: "Din e-mail gemmes separat og kan ikke kobles til dine svar. Den bruges kun til at sende resultatet af undersøgelsen."
+  },
   questions: {
     age: {
       number: 1,
@@ -71,10 +76,9 @@ window.SURVEY_CONFIG = {
       text: "Hvilken beskrivelse passer bedst på dig?",
       type: "single",
       options: [
-        { value: "ordinary", label: "Jeg er almindelig IT-bruger uden særlig IT-faglig baggrund" },
-        { value: "interested", label: "Jeg har interesse for eller lidt erfaring med IT" },
-        { value: "educated", label: "Jeg har en IT-faglig uddannelse" },
-        { value: "professional", label: "Jeg arbejder eller har arbejdet professionelt med IT" }
+        { value: "ordinary", label: "Jeg har ingen særlig IT-faglig baggrund" },
+        { value: "interested", label: "Jeg har interesse for eller noget erfaring med IT, men arbejder ikke professionelt med IT" },
+        { value: "professional", label: "Jeg har IT-faglig uddannelse og/eller arbejder eller har arbejdet professionelt med IT" }
       ],
       next: "aiUse"
     },
@@ -140,12 +144,12 @@ window.SURVEY_CONFIG = {
         { value: "gemini", label: "Google Gemini" },
         { value: "claude", label: "Claude" },
         { value: "perplexity", label: "Perplexity" },
-        { value: "word", label: "AI i Word" },
-        { value: "excel", label: "AI i Excel" },
-        { value: "outlook", label: "AI i Outlook / e-mail" },
+        { value: "word", label: "AI-funktioner i Word" },
+        { value: "excel", label: "AI-funktioner i Excel" },
+        { value: "outlook", label: "AI-funktioner i Outlook / e-mail" },
         { value: "search", label: "AI i søgemaskiner" },
         { value: "other", label: "Andre AI-værktøjer", other: true },
-        { value: "dontKnow", label: "Ved ikke", exclusive: true }
+        { value: "dontKnow", label: "Jeg ved ikke, om de programmer jeg bruger indeholder AI", exclusive: true }
       ],
       next: "aiChanged"
     },
@@ -228,8 +232,8 @@ window.SURVEY_CONFIG = {
         { value: "prompting", label: "Det kan være svært at formulere det rigtige spørgsmål" },
         { value: "privacy", label: "Jeg er bekymret for privatliv eller data" },
         { value: "tooMuchTime", label: "Jeg bruger for meget tid på AI" },
-        { value: "dependent", label: "Jeg føler, at jeg bliver for afhængig af AI" },
-        { value: "trustTooMuch", label: "Jeg stoler for meget på svarene" },
+        { value: "dependent", label: "Jeg kan blive for afhængig af AI" },
+        { value: "trust", label: "Det kan være svært at vurdere, hvornår jeg kan stole på svarene" },
         { value: "none", label: "Jeg oplever ingen særlige problemer", exclusive: true },
         { value: "other", label: "Andet", other: true }
       ],
@@ -410,6 +414,76 @@ window.SURVEY_CONFIG = {
         { value: "dontKnow", label: "Ved ikke" }
       ],
       next: "finish"
+    }
+  },
+
+  // Disse IT-faglige spørgsmål er modtaget, men aktiveres først når spørgsmål 21, 22, 25-27 og 31 er leveret.
+  // På den måde opfinder appen ikke manglende led i beslutningstræet.
+  pendingITQuestions: {
+    q23: {
+      number: 23,
+      optionsToAdd: [
+        "Opsætning og konfiguration af pc'er, software, netværk eller andre IT-systemer"
+      ]
+    },
+    q24: {
+      number: 24,
+      optionsToAdd: [
+        "Hjælp til opsætning og konfiguration"
+      ]
+    },
+    q28: {
+      number: 28,
+      text: "Hvilke kompetencer mener du bliver vigtigere, hvis nogen, når AI bruges mere i IT-arbejde?",
+      type: "multi",
+      options: [
+        { value: "understandProblem", label: "Forstå problemet" },
+        { value: "describeResult", label: "Beskrive det ønskede resultat" },
+        { value: "requirements", label: "Opstille tydelige krav" },
+        { value: "askAI", label: "Stille gode spørgsmål til AI" },
+        { value: "validateAI", label: "Vurdere om AI's svar er korrekt" },
+        { value: "testing", label: "Test og kvalitetssikring" },
+        { value: "security", label: "IT-sikkerhed" },
+        { value: "codeSystems", label: "Forståelse af kode og systemer" },
+        { value: "criticalThinking", label: "Kritisk tænkning" },
+        { value: "documentation", label: "Dokumentation" },
+        { value: "none", label: "Ingen af disse bliver vigtigere", exclusive: true },
+        { value: "other", label: "Andet", other: true }
+      ]
+    },
+    q29: {
+      number: 29,
+      text: "Har AI efter din vurdering ændret, hvor meget teknisk viden der kræves for at løse visse IT-opgaver?",
+      type: "single",
+      options: [
+        { value: "less", label: "Ja, der kræves mindre teknisk viden i nogle opgaver" },
+        { value: "more", label: "Ja, der kræves mere teknisk viden i nogle opgaver" },
+        { value: "both", label: "Begge dele - det afhænger af opgaven" },
+        { value: "no", label: "Nej" },
+        { value: "dontKnow", label: "Ved ikke" }
+      ],
+      plannedNext: {
+        less: "q30",
+        more: "q30",
+        both: "q30",
+        no: "q31",
+        dontKnow: "q31"
+      }
+    },
+    q30: {
+      number: 30,
+      text: "Inden for hvilke områder oplever du især denne ændring?",
+      type: "multi",
+      options: [
+        { value: "programming", label: "Programmering" },
+        { value: "databases", label: "Databaser" },
+        { value: "automation", label: "Automatisering" },
+        { value: "security", label: "IT-sikkerhed" },
+        { value: "troubleshooting", label: "Fejlfinding" },
+        { value: "configuration", label: "Opsætning og konfiguration" },
+        { value: "documentation", label: "Dokumentation" },
+        { value: "other", label: "Andet", other: true }
+      ]
     }
   }
 };
