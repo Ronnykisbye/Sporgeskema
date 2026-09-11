@@ -9,6 +9,7 @@
   let surveyPingPromise=null,emailPingPromise=null;
 
   const isTestMode=()=>TEST;
+  const hasAccessToken=()=>true;
   const draftKey=()=>TEST?TEST_DRAFT_KEY:DRAFT_KEY;
   const completedKey=()=>TEST?TEST_COMPLETED_KEY:COMPLETED_KEY;
   const createSessionId=()=>crypto?.randomUUID?crypto.randomUUID():`session-${Date.now()}-${Math.random().toString(36).slice(2,12)}`;
@@ -71,5 +72,5 @@
     try{await postOpaque(EMAIL_URL,p);for(let i=0;i<6;i++){try{const r=await jsonp(EMAIL_URL,{action:"email_status",request_id:requestId});if(r?.ok&&r.request_id===requestId)return {saved:true};}catch(e){}await new Promise(r=>setTimeout(r,450+i*250));}return {saved:false,code:"NO_CONFIRMATION"};}catch(e){return {saved:false,error:String(e)};}
   }
 
-  window.SURVEY_STORAGE={createSessionId,getBrowserId,saveDraft,loadDraft,clearDraft,hasCompleted,clearLocalDataKeepLock,saveCentralDraft,submitFinal,submitResultEmail,isTestMode,surveyBackendReady,mode:"google-sheets-shared-link-v5"};
+  window.SURVEY_STORAGE={createSessionId,getBrowserId,saveDraft,loadDraft,clearDraft,hasCompleted,hasAccessToken,clearLocalDataKeepLock,saveCentralDraft,submitFinal,submitResultEmail,isTestMode,surveyBackendReady,mode:"google-sheets-shared-link-v5"};
 })();
