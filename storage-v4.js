@@ -48,7 +48,33 @@
   }
 
   async function postOpaque(url,payload){await fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});}
-  function jsonp(url,query,timeout=4500){return new Promise((resolve,reject)=>{const cb=`__qa_${Date.now()}_${Math.random().toString(36).slice(2)}`,s=document.createElement("script");let done=false;const clean=(err,val)=>{if(done)return;done=true;clearTimeout(timer);try{delete window[cb];}catch(e){}s.remove();err?reject(err):resolve(val);};window[cb]=v=>clean(null,v);s.onerror=()=>clean(new Error("JSONP error"));s.src=`${url}?${new URLSearchParams({...query,callback:cb,_:String(Date.now())})}`;document.head.appendChild(s);const timer=setTimeout(()=>clean(new Error("timeout")),timeout);});}
+  function jsonp(url,query,timeout=20000){
+    return new Promise((resolve,reject)=>{
+      const cb=`__qa_${Date.now()}_${Math.random().toString(36).slice(2)}`,s=document.createElement("script");
+      let done=false,timer=null;
+      const clean=(err,val)=>{
+        if(done)return;
+        done=true;
+        if(timer)clearTimeout(timer);
+        try{s.remove();}catch(e){}
+        if(err){
+          // Google Apps Script kan være langsom pga. redirect. Behold en ufarlig
+          // callback kortvarigt, så et sent svar ikke giver ReferenceError i browseren.
+          window[cb]=()=>{};
+          setTimeout(()=>{try{delete window[cb];}catch(e){}},30000);
+          reject(err);
+        }else{
+          try{delete window[cb];}catch(e){}
+          resolve(val);
+        }
+      };
+      window[cb]=v=>clean(null,v);
+      s.onerror=()=>clean(new Error("JSONP error"));
+      s.src=`${url}?${new URLSearchParams({...query,callback:cb,_:String(Date.now())})}`;
+      timer=setTimeout(()=>clean(new Error("timeout")),timeout);
+      document.head.appendChild(s);
+    });
+  }
 
   async function surveyBackendReady(){
     if(!surveyPingPromise)surveyPingPromise=(async()=>{try{const r=await jsonp(ANSWERS_URL,{action:"survey_ping"});return Boolean(r?.ok&&r?.protocol===4);}catch(e){return false;}})();
