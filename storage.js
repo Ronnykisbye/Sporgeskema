@@ -1,7 +1,7 @@
 (() => {
   const DRAFT_KEY = "sporgeskema:draft:v1";
   const COMPLETED_KEY = "sporgeskema:completed:v1";
-  const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzSUPG6tXFyekTHyC8lJ0DMRXb7sTNHhuMm8KXFA4fNcBqLUUgLmlRmeRUhQ9JO80nLFQ/exec";
+  const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyNbhtQhvEgUXz1VS-jqzR_KqLKGr9RPeTvc5oYRVXVEQQByMyAopzN-5yVSzR0MYVs/exec";
 
   function createSessionId() {
     if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -47,8 +47,6 @@
       completedAt: new Date().toISOString()
     };
 
-    // Medtag alle kendte spørgsmål som faste kolonner. Det er vigtigt i et
-    // beslutningstræ, hvor forskellige respondenter kan få forskellige ruter.
     const questions = window.SURVEY_CONFIG?.questions || {};
     Object.keys(questions).forEach((id) => {
       const answer = payload.answers?.[id];
@@ -67,7 +65,6 @@
       completedAt: new Date().toISOString()
     };
 
-    // Behold altid en lokal kopi som sikkerhedsnet.
     try {
       localStorage.setItem(COMPLETED_KEY, JSON.stringify(completedRecord));
     } catch (error) {
@@ -77,9 +74,6 @@
     try {
       const sheetPayload = buildSheetPayload(payload);
 
-      // Google Apps Script webapps fungerer mest stabilt fra GitHub Pages med
-      // en simpel POST uden CORS-preflight. Svaret er derfor opaque, men når
-      // fetch gennemføres, er data sendt til webappen.
       await fetch(GOOGLE_SHEETS_URL, {
         method: "POST",
         mode: "no-cors",
