@@ -1,7 +1,10 @@
 (() => {
   const DRAFT_KEY = "sporgeskema:draft:v1";
   const COMPLETED_KEY = "sporgeskema:completed:v1";
-  const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyNbhtQhvEgUXz1VS-jqzR_KqLKGr9RPeTvc5oYRVXVEQQByMyAopzN-5yVSzR0MYVs/exec";
+  const SUBMITTED_LOCK_KEY = "sporgeskema:submitted:v2";
+
+  const ANSWERS_URL = "https://script.google.com/macros/s/AKfycbyNbhtQhvEgUXz1VS-jqzR_KqLKGr9RPeTvc5oYRVXVEQQByMyAopzN-5yVSzR0MYVs/exec";
+  const EMAIL_URL = "https://script.google.com/macros/s/AKfycbzSUPG6tXFyekTHyC8lJ0DMRXb7sTNHhuMm8KXFA4fNcBqLUUgLmlRmeRUhQ9JO80nLFQ/exec";
 
   function createSessionId() {
     if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -41,6 +44,14 @@
     }
   }
 
+  function hasCompleted() {
+    try {
+      return localStorage.getItem(SUBMITTED_LOCK_KEY) === "true";
+    } catch (error) {
+      return false;
+    }
+  }
+
   function buildSheetPayload(payload) {
     const data = {
       sessionId: payload.sessionId || "",
@@ -66,15 +77,9 @@
     };
 
     try {
-      localStorage.setItem(COMPLETED_KEY, JSON.stringify(completedRecord));
-    } catch (error) {
-      console.warn("Kunne ikke gemme lokal sikkerhedskopi", error);
-    }
-
-    try {
       const sheetPayload = buildSheetPayload(payload);
 
-      await fetch(GOOGLE_SHEETS_URL, {
+      await fetch(ANSWERS_URL, {
         method: "POST",
         mode: "no-cors",
         headers: {
@@ -83,11 +88,44 @@
         body: JSON.stringify(sheetPayload)
       });
 
+      localStorage.setItem(COMPLETED_KEY, JSON.stringify(completedRecord));
+      localStorage.setItem(SUBMITTED_LOCK_KEY, "true");
       clearDraft();
+
       return { saved: true, centralSaved: true };
     } catch (error) {
       console.error("Kunne ikke sende besvarelsen til Google Sheets", error);
-      return { saved: true, centralSaved: false, error: String(error) };
+      return { saved: false, centralSaved: false, error: String(error) };
+    }
+  }
+
+  async function submitResultEmail(email) {
+    const cleanEmail = String(email || "").trim();
+    if (!cleanEmail) return { saved: false };
+
+    const requestId = createSessionId();
+    const emailPayload = {
+      request_id: requestId,
+      created_at: new Date().toISOString(),
+      email: cleanEmail,
+      consent_result_summary: "yes",
+      source: "AU_AI_Spoergeskema",
+      status: "requested"
+    };
+
+    try {
+      await fetch(EMAIL_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(emailPayload)
+      });
+      return { saved: true };
+    } catch (error) {
+      console.error("Kunne ikke gemme e-mailønsket", error);
+      return { saved: false, error: String(error) };
     }
   }
 
@@ -96,7 +134,9 @@
     saveDraft,
     loadDraft,
     clearDraft,
+    hasCompleted,
     submitFinal,
+    submitResultEmail,
     mode: "google-sheets"
   };
 })();
