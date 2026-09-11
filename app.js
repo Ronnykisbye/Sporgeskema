@@ -36,7 +36,6 @@
     state.completed = false;
     storage?.clearDraft?.();
   }
-
   function getPayload() {
     return {
       sessionId: state.sessionId,
@@ -73,7 +72,7 @@
         <h2>Velkommen</h2>
         <p>Spørgeskemaet vises ét spørgsmål ad gangen og tilpasser sig dine svar.</p>
         <div class="info-box">
-          Denne udviklingsversion gemmer en anonym kladde lokalt i browseren undervejs. Der sendes endnu ikke svar til OneDrive, Google Drive eller en cloud-server.
+          Undervejs gemmes en anonym kladde lokalt i browseren. Når du afslutter spørgeskemaet, sendes din besvarelse til projektets Google Sheet.
         </div>
       </div>`;
 
