@@ -2,9 +2,27 @@
   const DRAFT_KEY = "sporgeskema:draft:v1";
   const COMPLETED_KEY = "sporgeskema:completed:v1";
   const SUBMITTED_LOCK_KEY = "sporgeskema:submitted:v2";
+  const TEST_DRAFT_KEY = "sporgeskema:test:draft:v1";
+  const TEST_COMPLETED_KEY = "sporgeskema:test:completed:v1";
 
   const ANSWERS_URL = "https://script.google.com/macros/s/AKfycbyNbhtQhvEgUXz1VS-jqzR_KqLKGr9RPeTvc5oYRVXVEQQByMyAopzN-5yVSzR0MYVs/exec";
   const EMAIL_URL = "https://script.google.com/macros/s/AKfycbzSUPG6tXFyekTHyC8lJ0DMRXb7sTNHhuMm8KXFA4fNcBqLUUgLmlRmeRUhQ9JO80nLFQ/exec";
+
+  function isTestMode() {
+    try {
+      return new URLSearchParams(window.location.search).get("test") === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function getDraftKey() {
+    return isTestMode() ? TEST_DRAFT_KEY : DRAFT_KEY;
+  }
+
+  function getCompletedKey() {
+    return isTestMode() ? TEST_COMPLETED_KEY : COMPLETED_KEY;
+  }
 
   function createSessionId() {
     if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
@@ -13,7 +31,7 @@
 
   function saveDraft(payload) {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...payload, savedAt: new Date().toISOString() }));
+      localStorage.setItem(getDraftKey(), JSON.stringify({ ...payload, savedAt: new Date().toISOString() }));
       return true;
     } catch (error) {
       console.warn("Kunne ikke gemme lokal kladde", error);
@@ -23,7 +41,7 @@
 
   function loadDraft() {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      const raw = localStorage.getItem(getDraftKey());
       return raw ? JSON.parse(raw) : null;
     } catch (error) {
       console.warn("Kunne ikke læse lokal kladde", error);
@@ -32,20 +50,26 @@
   }
 
   function clearDraft() {
-    try { localStorage.removeItem(DRAFT_KEY); }
+    try { localStorage.removeItem(getDraftKey()); }
     catch (error) { console.warn("Kunne ikke slette lokal kladde", error); }
   }
 
   function hasCompleted() {
+    if (isTestMode()) return false;
     try { return localStorage.getItem(SUBMITTED_LOCK_KEY) === "true"; }
     catch (error) { return false; }
   }
 
   function clearLocalDataKeepLock() {
     try {
-      localStorage.removeItem(DRAFT_KEY);
-      localStorage.removeItem(COMPLETED_KEY);
-      localStorage.setItem(SUBMITTED_LOCK_KEY, "true");
+      if (isTestMode()) {
+        localStorage.removeItem(TEST_DRAFT_KEY);
+        localStorage.removeItem(TEST_COMPLETED_KEY);
+      } else {
+        localStorage.removeItem(DRAFT_KEY);
+        localStorage.removeItem(COMPLETED_KEY);
+        localStorage.setItem(SUBMITTED_LOCK_KEY, "true");
+      }
       return true;
     } catch (error) {
       console.warn("Kunne ikke rydde lokale data", error);
@@ -56,7 +80,8 @@
   function buildSheetPayload(payload) {
     const data = {
       sessionId: payload.sessionId || "",
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
+      test_result: isTestMode() ? "TEST - MÅ IKKE BRUGES" : "NEJ - RIGTIG BESVARELSE"
     };
 
     const questions = window.SURVEY_CONFIG?.questions || {};
@@ -71,7 +96,11 @@
   }
 
   async function submitFinal(payload) {
-    const completedRecord = { ...payload, completedAt: new Date().toISOString() };
+    const completedRecord = {
+      ...payload,
+      completedAt: new Date().toISOString(),
+      test_result: isTestMode() ? "TEST - MÅ IKKE BRUGES" : "NEJ - RIGTIG BESVARELSE"
+    };
 
     try {
       const sheetPayload = buildSheetPayload(payload);
@@ -82,13 +111,13 @@
         body: JSON.stringify(sheetPayload)
       });
 
-      localStorage.setItem(COMPLETED_KEY, JSON.stringify(completedRecord));
-      localStorage.setItem(SUBMITTED_LOCK_KEY, "true");
+      localStorage.setItem(getCompletedKey(), JSON.stringify(completedRecord));
+      if (!isTestMode()) localStorage.setItem(SUBMITTED_LOCK_KEY, "true");
       clearDraft();
-      return { saved: true, centralSaved: true };
+      return { saved: true, centralSaved: true, testMode: isTestMode() };
     } catch (error) {
       console.error("Kunne ikke sende besvarelsen til Google Sheets", error);
-      return { saved: false, centralSaved: false, error: String(error) };
+      return { saved: false, centralSaved: false, error: String(error), testMode: isTestMode() };
     }
   }
 
@@ -101,8 +130,9 @@
       created_at: new Date().toISOString(),
       email: cleanEmail,
       consent_result_summary: "yes",
-      source: "AU_AI_Spoergeskema",
-      status: "requested"
+      source: isTestMode() ? "AU_AI_Spoergeskema_TEST" : "AU_AI_Spoergeskema",
+      status: "requested",
+      test_result: isTestMode() ? "TEST - MÅ IKKE BRUGES" : "NEJ - RIGTIG BESVARELSE"
     };
 
     try {
@@ -112,10 +142,10 @@
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(emailPayload)
       });
-      return { saved: true };
+      return { saved: true, testMode: isTestMode() };
     } catch (error) {
       console.error("Kunne ikke gemme e-mailønsket", error);
-      return { saved: false, error: String(error) };
+      return { saved: false, error: String(error), testMode: isTestMode() };
     }
   }
 
@@ -128,6 +158,7 @@
     clearLocalDataKeepLock,
     submitFinal,
     submitResultEmail,
+    isTestMode,
     mode: "google-sheets"
   };
 })();
