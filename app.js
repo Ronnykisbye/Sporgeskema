@@ -26,6 +26,16 @@
       .replaceAll("'", "&#039;");
   }
 
+  function showFooter() {
+    backBtn.style.display = "";
+    nextBtn.style.display = "";
+  }
+
+  function hideFooterButtons() {
+    backBtn.style.display = "none";
+    nextBtn.style.display = "none";
+  }
+
   function resetState() {
     state.sessionId = storage?.createSessionId?.() || `session-${Date.now()}`;
     state.started = false;
@@ -36,6 +46,7 @@
     state.completed = false;
     storage?.clearDraft?.();
   }
+
   function getPayload() {
     return {
       sessionId: state.sessionId,
@@ -62,6 +73,7 @@
   }
 
   function renderWelcome() {
+    showFooter();
     state.started = false;
     state.currentId = null;
     state.history = [];
@@ -83,7 +95,24 @@
     nextBtn.textContent = "Start";
   }
 
+  function renderAlreadyCompleted() {
+    state.completed = true;
+    progressBar.style.width = "100%";
+    progressText.textContent = "Besvarelse allerede registreret";
+    hideFooterButtons();
+
+    screen.innerHTML = `
+      <div class="complete">
+        <h2>Tak for din besvarelse</h2>
+        <p>Der er allerede registreret en besvarelse fra denne browser.</p>
+        <div class="info-box">
+          For at gøre undersøgelsen så pålidelig som muligt kan spørgeskemaet kun besvares én gang fra samme browser.
+        </div>
+      </div>`;
+  }
+
   function renderQuestion(id) {
+    showFooter();
     const q = config.questions[id];
     if (!q) return finishSurvey();
 
@@ -325,6 +354,53 @@
     progressText.textContent = `Ca. ${completedIncludingCurrent} af ${estimatedTotal} på denne rute`;
   }
 
+  function renderCompletionWithEmail() {
+    hideFooterButtons();
+    screen.innerHTML = `
+      <div class="complete">
+        <h2>Tak</h2>
+        <p>${esc(config.completionText)}</p>
+        <div class="info-box">
+          <strong>Vil du have resultatet?</strong><br>
+          Det er helt frivilligt. Skriv din e-mailadresse her, hvis du vil modtage en kort opsummering af undersøgelsens resultat. E-mailadressen gemmes separat fra dine svar.
+        </div>
+        <form id="resultEmailForm" style="display:grid;gap:10px;max-width:540px;margin-top:4px;">
+          <label class="other-label" for="resultEmail">E-mailadresse</label>
+          <input class="other-input" id="resultEmail" type="email" autocomplete="email" maxlength="200" required placeholder="navn@eksempel.dk">
+          <button class="btn btn-primary" id="emailSubmitBtn" type="submit">Send mig resultatet</button>
+          <p id="emailStatus" aria-live="polite"></p>
+        </form>
+      </div>`;
+
+    const form = document.getElementById("resultEmailForm");
+    const emailInput = document.getElementById("resultEmail");
+    const submitBtn = document.getElementById("emailSubmitBtn");
+    const status = document.getElementById("emailStatus");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!emailInput.checkValidity()) {
+        emailInput.reportValidity();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Gemmer…";
+      const result = await storage?.submitResultEmail?.(emailInput.value);
+
+      if (result?.saved) {
+        form.innerHTML = `
+          <div class="info-box">
+            Tak. Din e-mailadresse er registreret til resultatoversigten.
+          </div>`;
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send mig resultatet";
+        status.textContent = "E-mailadressen kunne ikke gemmes. Prøv igen.";
+      }
+    });
+  }
+
   async function finishSurvey() {
     if (state.completed) return;
 
@@ -339,36 +415,24 @@
     state.currentId = null;
 
     if (result?.centralSaved) {
-      screen.innerHTML = `
-        <div class="complete">
-          <h2>Tak</h2>
-          <p>${esc(config.completionText)}</p>
-        </div>`;
+      renderCompletionWithEmail();
     } else {
+      hideFooterButtons();
       screen.innerHTML = `
         <div class="complete">
-          <h2>Tak for din hjælp</h2>
-          <p>Du har gennemført de spørgsmål, der var relevante for din rute.</p>
-          <div class="info-box">
-            Dette er stadig en udviklingsversion. Besvarelsen er gemt lokalt i denne browser, men er endnu ikke registreret i den endelige cloud-database. Derfor vises den endelige kvittering og det frivillige e-mailvalg først, når den sikre backend er koblet på.
-          </div>
+          <h2>Der opstod en fejl</h2>
+          <p>Besvarelsen kunne ikke bekræftes som gemt. Genindlæs siden og prøv igen.</p>
         </div>`;
     }
-
-    nextBtn.disabled = false;
-    nextBtn.textContent = "Start igen";
   }
 
   backBtn.addEventListener("click", goBack);
-  nextBtn.addEventListener("click", () => {
-    if (state.completed) {
-      resetState();
-      renderWelcome();
-    } else {
-      goNext();
-    }
-  });
+  nextBtn.addEventListener("click", goNext);
 
-  resetState();
-  renderWelcome();
+  if (storage?.hasCompleted?.()) {
+    renderAlreadyCompleted();
+  } else {
+    resetState();
+    renderWelcome();
+  }
 })();
