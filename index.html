@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#2563eb" />
-  <meta name="description" content="Interaktivt spørgeskema til AU-afgangsprojekt i informationsteknologi." />
-  <title>Spørgeskema om AI og IT</title>
+  <meta name="description" content="Spørgeskema om AI og IT – undersøgelsen er afsluttet." />
+  <title>Spørgeskema om AI og IT – lukket</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -15,25 +15,20 @@
         <div>
           <p class="eyebrow">AU · Informationsteknologi</p>
           <h1>Spørgeskema om AI og IT</h1>
-          <p class="intro">Kort interaktiv undersøgelse om brug af AI i hverdagen og i IT.</p>
-          <div id="testBanner" class="info-box" hidden style="margin-top:14px;border:2px solid #b45309;background:#fff7ed;color:#9a3412;font-weight:700;">TESTTILSTAND – alle svar og e-mailadresser fra denne kørsel markeres som TEST og må ikke bruges i undersøgelsen.</div>
-        </div>
-        <div class="progress-wrap" aria-label="Fremdrift">
-          <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
-          <span id="progressText">Klar</span>
+          <p class="intro">Undersøgelsen til mit afgangsprojekt er nu afsluttet.</p>
         </div>
       </header>
-      <div id="screen" class="screen"></div>
-      <footer class="survey-footer">
-        <button id="backBtn" class="btn btn-secondary" type="button" disabled>Tilbage</button>
-        <button id="nextBtn" class="btn btn-primary" type="button">Start</button>
-      </footer>
+
+      <div class="screen">
+        <div class="complete">
+          <h2>Spørgeskemaet er lukket for flere svar</h2>
+          <p>Tak for din interesse. Det er ikke længere muligt at starte eller indsende en besvarelse.</p>
+          <div class="info-box">
+            Tak til alle, der har deltaget og bidraget til mit afgangsprojekt om AI og IT.
+          </div>
+        </div>
+      </div>
     </section>
   </main>
-  <script src="questions.js"></script>
-  <script src="flow-fixes.js"></script>
-  <script src="storage-v4.js"></script>
-  <script>if(window.SURVEY_STORAGE?.isTestMode?.())document.getElementById("testBanner").hidden=false;</script>
-  <script src="app-v3.js"></script>
 </body>
 </html>
